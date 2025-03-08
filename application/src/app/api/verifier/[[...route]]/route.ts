@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { handle } from 'hono/vercel';
 import { db } from '@/db';
-import { students, verifiers } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { documents, students, verifiers } from '@/db/schema';
+import { and, eq } from 'drizzle-orm';
 import { keyAuth } from '../../../../../middleware/keyAuth';
 
 export const runtime = 'edge';
@@ -84,6 +84,40 @@ app.post('/delete-verifier', keyAuth, async (c) => {
   await db.delete(verifiers).where(eq(verifiers.verifier_id, verifierId));
 
   return c.json({ message: 'Verifier deleted successfully' });
+});
+
+app.post('/verify-document', keyAuth, async (c) => {
+  const { documentId, verifierId } = await c.req.json();
+
+  if (!documentId || !verifierId) {
+    return c.json({ error: 'Missing document ID or verifier ID' }, 400);
+  }
+
+  await db
+    .update(documents)
+    .set({ status: 'verified', verifier_id: verifierId })
+    .where(eq(documents.document_id, documentId));
+
+  return c.json({ message: 'Document verified successfully' });
+});
+
+app.get('/get-all-verified-documents', keyAuth, async (c) => {
+  const verifierId = String(c.req.query('verifierId'));
+  if (!verifierId) {
+    return c.json({ error: 'Missing verifier ID' }, 400);
+  }
+
+  const verifiedDocs = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.status, 'verified'),
+        eq(documents.verifier_id, verifierId)
+      )
+    );
+
+  return c.json(verifiedDocs);
 });
 
 export const GET = handle(app);

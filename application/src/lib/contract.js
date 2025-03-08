@@ -1,6 +1,29 @@
 import { ethers } from 'ethers';
 
-const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512'; // Replace with your contract address
+// Helper function to convert Sets to Arrays in returned data
+function sanitizeData(data) {
+  if (data === null || typeof data !== 'object') {
+    return data;
+  }
+
+  if (data instanceof Set) {
+    return Array.from(data);
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(sanitizeData);
+  }
+
+  if (typeof data === 'object') {
+    return Object.fromEntries(
+      Object.entries(data).map(([key, value]) => [key, sanitizeData(value)])
+    );
+  }
+
+  return data;
+}
+
+const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'; // Replace with your contract address
 const abi = [
   {
     inputs: [],
@@ -764,8 +787,43 @@ const abi = [
   },
 ];
 
-const provider = new ethers.JsonRpcProvider('http://localhost:8545');
-const signer = await provider.getSigner();
-const contract = new ethers.Contract(contractAddress, abi, signer);
+// Move contract initialization into a function
+async function getContract() {
+  const provider = new ethers.JsonRpcProvider('http://127.0.0.1:8545/');
+  const signer = await provider.getSigner();
+  return new ethers.Contract(contractAddress, abi, signer);
+}
+
+// Create a wrapper for contract methods
+const contract = {
+  async retrieveDocument(documentId) {
+    try {
+      const contractInstance = await getContract();
+      const result = await contractInstance.retrieveDocument(documentId);
+      return sanitizeData(result);
+    } catch (error) {
+      console.error('Error in retrieveDocument:', error);
+      throw error;
+    }
+  },
+
+  async uploadDocument(documentId, title, description, documentType) {
+    try {
+      const contractInstance = await getContract();
+      const result = await contractInstance.uploadDocument(
+        documentId,
+        title,
+        description,
+        documentType
+      );
+      return sanitizeData(result);
+    } catch (error) {
+      console.error('Error in uploadDocument:', error);
+      throw error;
+    }
+  },
+
+  // Add other contract methods here following the same pattern
+};
 
 export default contract;

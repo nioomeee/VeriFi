@@ -1,16 +1,19 @@
-const hre = require("hardhat");
+const hre = require('hardhat');
 
 async function main() {
-    const ContractFactory = await hre.ethers.getContractFactory("VeriFi");
-    const contract = await ContractFactory.deploy(); // Deploy contract
-    await contract.waitForDeployment(); // Wait for deployment to complete
+  const [owner, verifier, student, employer] = await hre.ethers.getSigners();
 
-    console.log(`Contract deployed at: ${contract.target}`); // Correct way to get address
+  const VeriFi = await hre.ethers.getContractFactory('VeriFi');
+  const veriFi = await VeriFi.deploy();
+
+  console.log('VeriFi deployed to:', veriFi.target);
+  console.log('Owner address:', owner.address);
+  console.log('Verifier address:', verifier.address);
+  console.log('Student address:', student.address);
+  console.log('Employer address:', employer.address);
 }
 
-main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error("Contract deployment failed:", error);
-        process.exit(1);
-    });
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

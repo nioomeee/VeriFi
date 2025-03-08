@@ -1,6 +1,7 @@
 'use client';
 import { UserButton, useUser } from '@clerk/nextjs';
 import React from 'react';
+import { RiVerifiedBadgeFill } from 'react-icons/ri';
 
 const UserTab = () => {
   const user = useUser();
@@ -19,7 +20,12 @@ const UserTab = () => {
           }}
         />
       </div>
-      <span className="text-2xl leading-9">{user.user?.fullName}</span>
+      <span className="text-2xl flex flex-row justify-center items-center gap-2 leading-9 text-nowrap">
+        {user.user?.fullName}
+        {user.user?.publicMetadata.role === 'verifier' && (
+          <RiVerifiedBadgeFill className="text-cyan-600" />
+        )}
+      </span>
     </div>
   );
 };

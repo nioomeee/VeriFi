@@ -23,7 +23,7 @@ const DocumentsShared = ({
       }}
     >
       <CardTitle className="absolute font-Rubik text-2xl font-semibold leading-9 text-black left-6 top-4">
-        Pending Verifications
+        Documents Shared
       </CardTitle>
       <div className="flex flex-row gap-2 p-12 justify-center items-center">
         <div className="flex flex-col w-1/3 justify-center items-center pt-4">

@@ -3,15 +3,14 @@ import React from 'react';
 import { GoHome, GoShareAndroid } from 'react-icons/go';
 import { IoDocumentOutline } from 'react-icons/io5';
 import { VscGitPullRequestGoToChanges } from 'react-icons/vsc';
-import { PieChartComponent } from '@/components/ui/pie-chart';
-import RecentRequests from '../components/student/RecentRequests';
 import PendingVerifications from '../components/student/PendingVerifications';
-import DocumentsShared from '../components/student/DocumentsShared';
 import Avatar from '@/../public/svgs/avatar.svg';
-import DocumentsTable from '../components/student/DocumentsTable';
 import Developers from '../components/Developers';
 import VerifierNavbar from '../components/verifier/VerifierNavbar';
 import VerifierSidebar from '../components/verifier/VerifierSidebar';
+import VeriFiUploadCard from '../components/student/VerifiUploadCard';
+import RecentlyVerified from '../components/verifier/RecentlyVerified';
+import VerifiedDocuments from '../components/verifier/VerifiedDocuments';
 
 const Page = () => {
   const [selected, setSelected] = React.useState('Dashboard');
@@ -61,30 +60,17 @@ const Page = () => {
         {/* Content Area */}
         <div className="flex-1 overflow-x-hidden p-10 text-white">
           <div className="flex flex-row gap-10">
-            <PieChartComponent
-              height={412}
-              width={325}
-              title="Current Documents"
-              data={[
-                { label: 'Marksheet', value: 20, fill: 'hsl(var(--chart-1))' },
-                { label: 'Tests', value: 30, fill: 'hsl(var(--chart-2))' },
-                {
-                  label: 'Certificates',
-                  value: 10,
-                  fill: 'hsl(var(--chart-3))',
-                },
-              ]}
-            />
+            <VeriFiUploadCard />
             <div className="flex flex-col gap-10">
-              <RecentRequests />
-              <PendingVerifications verifications={1} />
+              <RecentlyVerified verifierId="VER001" />
+              <PendingVerifications accessId={1} />
             </div>
             <div>
-              <DocumentsShared data={{ top: 5, second: 4, third: 1 }} />
+              <VerifiedDocuments verifierId="VER001" />
             </div>
           </div>
           <div className="relative flex flex-row gap-10 mt-6">
-            <DocumentsTable height={500} width={750} />
+            {/* <DocumentsTable height={500} width={750} /> */}
             <div
               className="absolute w-56 h-56 bottom-3 right-64 rounded-full"
               style={{

@@ -11,13 +11,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
+  // Return a minimal tree during SSR/initial render
   if (!mounted) {
-    return <>{children}</>; // Avoids mismatch by not rendering until mounted
+    return (
+      <div style={{ visibility: 'hidden' }}>
+        <ClerkProvider>{children}</ClerkProvider>
+      </div>
+    );
   }
 
   return (
     <ClerkProvider>
-      <ThemeProvider attribute="class" defaultTheme="dark">
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="dark"
+        enableSystem={false}
+        storageKey="verifi-theme"
+        value={{
+          light: 'light',
+          dark: 'dark',
+        }}
+      >
         {children}
       </ThemeProvider>
     </ClerkProvider>
