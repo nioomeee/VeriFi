@@ -22,6 +22,8 @@ contract VeriFi is AccessControl {
     mapping(address => uint256[]) public userDocuments;
     mapping(string => address) public hexCodeToUser;
     mapping(address => mapping(uint256 => address[])) public documentAccess;
+    mapping(bytes32 => uint256) public expirationTimestamps; // Maps hash to expiration timestamp
+    mapping(uint256 => bytes32) public documentHashes; // Maps documentId to its unique hash
 
     event DocumentUploaded(uint256 indexed documentId, string title, string description, string documentType, address indexed uploader, string ipfsCID);
     event DocumentDeleted(uint256 indexed documentId, address indexed verifier);
@@ -35,23 +37,55 @@ contract VeriFi is AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function uploadDocument(uint256 documentId, string memory title, string memory description, string memory documentType, string memory ipfsCID) external onlyRole(VERIFIER_ROLE) {
+    function uploadDocument(
+        uint256 documentId,
+        string memory title,
+        string memory description,
+        string memory documentType,
+        string memory ipfsCID,
+        string memory ipfsURL,
+        uint256 expirationTime // New parameter for expiration time
+    ) external onlyRole(VERIFIER_ROLE) {
         require(!documentExists[documentId], "Document already exists");
         require(bytes(title).length > 0, "Title cannot be empty");
         require(bytes(documentType).length > 0, "Document type cannot be empty");
         require(bytes(ipfsCID).length > 0, "IPFS CID cannot be empty");
+        require(bytes(ipfsURL).length > 0, "IPFS URL cannot be empty");
+        require(expirationTime > block.timestamp, "Expiration time must be in the future");
 
+        // Generate a unique hash for the document
+        bytes32 hash = generateUniqueHash(documentId, msg.sender);
+
+        // Store the document and its hash
         documents[documentId] = Document({
             title: title,
             description: description,
             documentType: documentType,
-            ipfsCID: ipfsCID,
+            ipfsCID: ipfsURL, // Store the IPFS URL for now
             uploader: msg.sender
         });
 
         documentExists[documentId] = true;
         userDocuments[msg.sender].push(documentId);
-        emit DocumentUploaded(documentId, title, description, documentType, msg.sender, ipfsCID);
+
+        // Store the hash and expiration timestamp
+        documentHashes[documentId] = hash;
+        expirationTimestamps[hash] = expirationTime;
+
+        emit DocumentUploaded(documentId, title, description, documentType, msg.sender, ipfsURL);
+    }
+
+    function generateUniqueHash(uint256 documentId, address uploader) public view returns (bytes32) {
+        return keccak256(abi.encodePacked(documentId, uploader, block.timestamp));
+    }
+
+    function getExpirationTimestamp(bytes32 hash) external view returns (uint256) {
+        return expirationTimestamps[hash];
+    }
+
+    function getDocumentHash(uint256 documentId) external view returns (bytes32) {
+        require(documentExists[documentId], "Document does not exist");
+        return documentHashes[documentId];
     }
 
     function deleteDocument(uint256 documentId) external onlyRole(VERIFIER_ROLE) {
@@ -109,14 +143,28 @@ contract VeriFi is AccessControl {
         }
         require(hasAccess, "No access granted");
 
-        // Remove employer from the access list
+        // Calculate the size of the new access list
+        uint256 newSize = 0;
         for (uint256 i = 0; i < documentAccess[msg.sender][documentId].length; i++) {
-            if (documentAccess[msg.sender][documentId][i] == employer) {
-                documentAccess[msg.sender][documentId][i] = documentAccess[msg.sender][documentId][documentAccess[msg.sender][documentId].length - 1];
-                documentAccess[msg.sender][documentId].pop();
-                break;
+            if (documentAccess[msg.sender][documentId][i] != employer) {
+                newSize++;
             }
         }
+
+        // Create a new array with the correct size
+        address[] memory updatedAccessList = new address[](newSize);
+        uint256 index = 0;
+
+        // Populate the new array
+        for (uint256 i = 0; i < documentAccess[msg.sender][documentId].length; i++) {
+            if (documentAccess[msg.sender][documentId][i] != employer) {
+                updatedAccessList[index] = documentAccess[msg.sender][documentId][i];
+                index++;
+            }
+        }
+
+        // Update the access list
+        documentAccess[msg.sender][documentId] = updatedAccessList;
 
         emit AccessRevoked(employer, documentId, msg.sender);
     }
